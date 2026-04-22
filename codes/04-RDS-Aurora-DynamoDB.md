@@ -1,105 +1,192 @@
-# Part 4 — RDS MySQL, Aurora, DynamoDB
+# Part 4 — DB Services (RDS MySQL, Aurora, DynamoDB)
 
-## Scope
-This document consolidates SQL and CLI materials from the managed database services part
+## 0) One-paragraph objective summary
+This final module demonstrates production-style managed database practice across SQL and NoSQL: build a restartable MySQL initialization script on RDS, run meaningful Aurora queries through secure private connectivity (console + SSH bastion), and execute DynamoDB lifecycle operations by CLI (create table, load 20+ rows, retrieve by key, filter/select patterns, and delete records). All sensitive values are replaced with placeholders so the guide is safe for public portfolio use.
 
 ---
 
-## 1. RDS MySQL — restartable script
+## 1) Big-picture architecture
 
-> Replace demo credentials before publishing publicly.
+```text
+Local PC → SSO/CLI → S3 / EC2 / Glue / Athena / Redshift / RDS / DynamoDB
+```
+
+Part 4 active flow:
+
+```text
+Local PC
+  ├─ SQL client → RDS MySQL (publicly reachable only if intentionally exposed)
+  ├─ SQL client → SSH tunnel via EC2 → Aurora (private endpoint)
+  └─ AWS CLI → DynamoDB API (create/write/read/delete)
+```
+
+---
+
+## 2) Artifact map by extension
+
+| Purpose | File | Type |
+|---|---|---|
+| Task runbook + interpretation | `codes/04-RDS-Aurora-DynamoDB.md` | `.md` |
+| DynamoDB batch write payload (20+ rows) | `customers_batch_sumi.json` | `.json` |
+| DynamoDB batch get payload (5+ keys) | `get_items_sumi.json` | `.json` |
+| Optional relational init script extraction | `sql/mysql/04_init.sql` | `.sql` |
+| Optional Dynamo automation wrapper | `scripts/dynamo_seed.py` | `.py` |
+| Optional infra templates | `templates/*.yaml` | `.yaml` |
+
+---
+
+## 3) TASK 1 — RDS MySQL (restartable initial script)
+
+### 3.1 Why this script structure
+A restartable initialization script must be idempotent:
+- `CREATE ... IF NOT EXISTS`
+- `DROP ... IF EXISTS` before object recreation when needed
+- `INSERT ... ON DUPLICATE KEY UPDATE` for repeat-safe DML
+
+### 3.2 Admin bootstrap vs personal user
+- Admin credentials are used only once to create/grant a personal user.
+- All later operations should run with the personal user.
+- Never store real passwords in repository files.
+
+### 3.3 Practical SQL script (public-safe)
 
 ```sql
-CREATE USER IF NOT EXISTS 'your_user'@'%' IDENTIFIED BY 'REPLACE_ME';
-CREATE SCHEMA IF NOT EXISTS mysql_sch;
-GRANT ALL PRIVILEGES ON mysql_sch.* TO 'your_user'@'%';
-GRANT CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, TRIGGER ON mysql_sch.* TO 'your_user'@'%';
+-- 1) user + schema
+CREATE USER IF NOT EXISTS 'app_user'@'%' IDENTIFIED BY '<strong-password-xx>';
+CREATE SCHEMA IF NOT EXISTS app_relational;
+
+-- 2) privileges
+GRANT ALL PRIVILEGES ON app_relational.* TO 'app_user'@'%';
+GRANT CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, TRIGGER ON app_relational.* TO 'app_user'@'%';
 FLUSH PRIVILEGES;
 
+-- 3) validation
 SELECT CURRENT_USER(), USER();
 SHOW GRANTS FOR CURRENT_USER;
 
-CREATE TABLE IF NOT EXISTS mysql_sch.sanity_check (
-  id INT PRIMARY KEY,
-  note VARCHAR(100)
-);
-DROP TABLE IF EXISTS mysql_sch.sanity_check;
-
-USE mysql_sch;
-
-CREATE TABLE IF NOT EXISTS mysql_sch.people (
+-- 4) table
+CREATE TABLE IF NOT EXISTS app_relational.people (
   person_id INT PRIMARY KEY,
   full_name VARCHAR(100) NOT NULL,
   age INT NOT NULL,
-  city VARCHAR(100) NULL,
+  city VARCHAR(100),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO mysql_sch.people (person_id, full_name, age, city)
+-- 5) idempotent seed
+INSERT INTO app_relational.people (person_id, full_name, age, city)
 VALUES
   (1, 'Ada Lovelace', 36, 'London'),
   (2, 'Alan Turing', 41, 'Manchester'),
   (3, 'Grace Hopper', 85, 'New York')
 ON DUPLICATE KEY UPDATE
   full_name = VALUES(full_name),
-  age       = VALUES(age),
-  city      = VALUES(city);
+  age = VALUES(age),
+  city = VALUES(city);
 
-DROP VIEW IF EXISTS mysql_sch.v_adults;
-CREATE SQL SECURITY INVOKER VIEW v_adults AS
+-- 6) view
+DROP VIEW IF EXISTS app_relational.v_adults;
+CREATE SQL SECURITY INVOKER VIEW app_relational.v_adults AS
 SELECT person_id, full_name, age, city
-FROM people
+FROM app_relational.people
 WHERE age >= 18;
-```
 
-### Procedure note
-Some MySQL environments do not support `CREATE PROCEDURE IF NOT EXISTS` directly.  
-A portable pattern is:
-1. `DROP PROCEDURE IF EXISTS ...`
-2. `DELIMITER $$`
-3. `CREATE PROCEDURE ...`
-4. `DELIMITER ;`
-
-```sql
-DROP PROCEDURE IF EXISTS mysql_sch.add_or_update_person;
+-- 7) procedure (portable pattern)
+DROP PROCEDURE IF EXISTS app_relational.add_or_update_person;
 DELIMITER $$
-CREATE PROCEDURE mysql_sch.add_or_update_person(
+CREATE PROCEDURE app_relational.add_or_update_person(
     IN p_person_id INT,
     IN p_full_name VARCHAR(100),
     IN p_age INT,
     IN p_city VARCHAR(100)
 )
 BEGIN
-  INSERT INTO mysql_sch.people (person_id, full_name, age, city)
+  INSERT INTO app_relational.people (person_id, full_name, age, city)
   VALUES (p_person_id, p_full_name, p_age, p_city)
   ON DUPLICATE KEY UPDATE
     full_name = VALUES(full_name),
-    age       = VALUES(age),
-    city      = VALUES(city);
+    age = VALUES(age),
+    city = VALUES(city);
 END$$
 DELIMITER ;
 
-CALL mysql_sch.add_or_update_person(4, 'Donald Knuth', 86, 'Stanford');
-SELECT * FROM mysql_sch.people ORDER BY person_id;
-SELECT * FROM mysql_sch.v_adults ORDER BY person_id;
+-- 8) quick tests
+CALL app_relational.add_or_update_person(4, 'Donald Knuth', 86, 'Stanford');
+SELECT * FROM app_relational.people ORDER BY person_id;
+SELECT * FROM app_relational.v_adults ORDER BY person_id;
 ```
 
 ---
 
-## 2. Aurora — SSH tunnel through EC2
+## 4) TASK 2 — Aurora access and meaningful querying
+
+### 4.1 Why Aurora from local PC usually needs bastion/SSH tunnel
+Unlike a publicly exposed RDS MySQL instance, Aurora is commonly deployed in private subnets without a public endpoint. That improves security, but local machines cannot connect directly. EC2 in the same VPC acts as a controlled bridge.
+
+### 4.2 SSH tunnel command (local → EC2 → Aurora)
 
 ```bash
-ssh -i "Ec2_PG_Server_Keys_sumi.pem" \
-  -L 3307:xxlab-aurora-cluster.cluster-cqlpneuyr8on.eu-central-1.rds.amazonaws.com:3306 \
-  ec2-user@ec2-3-72-108-205.eu-central-1.compute.amazonaws.com
+ssh -i "<jump-host-key>.pem" \
+  -L 3307:<aurora-cluster-endpoint>:3306 \
+  ec2-user@<jump-host-public-dns>
 ```
 
-### Why this pattern is needed
-Aurora was treated as privately accessible in the task environment, so a local machine could not connect directly. EC2 was used as a bastion/jump server in the same VPC, and DBeaver then connected to `127.0.0.1:3307` through the tunnel.
+Then connect in DBeaver/MySQL client to:
+- host: `127.0.0.1`
+- port: `3307`
+- db: `<db_name_xx>`
+- user/password: `<xx>`
+
+### 4.3 Meaningful Aurora query examples (not trivial)
+
+```sql
+-- Top 10 cities by total customer payments
+SELECT c.city, SUM(p.amount) AS total_amount, COUNT(*) AS payment_count
+FROM sakila.payment p
+JOIN sakila.customer c ON p.customer_id = c.customer_id
+GROUP BY c.city
+ORDER BY total_amount DESC
+LIMIT 10;
+
+-- Monthly revenue trend
+SELECT DATE_FORMAT(payment_date, '%Y-%m') AS ym,
+       SUM(amount) AS revenue
+FROM sakila.payment
+GROUP BY DATE_FORMAT(payment_date, '%Y-%m')
+ORDER BY ym;
+
+-- Customers with high frequency rentals
+SELECT c.customer_id, CONCAT(c.first_name,' ',c.last_name) AS full_name,
+       COUNT(r.rental_id) AS rentals
+FROM sakila.customer c
+JOIN sakila.rental r ON c.customer_id = r.customer_id
+GROUP BY c.customer_id, full_name
+HAVING COUNT(r.rental_id) >= 20
+ORDER BY rentals DESC;
+```
 
 ---
 
-## 3. DynamoDB batch write
+## 5) TASK 3 — DynamoDB (API-first operations)
+
+## 5.1 Create table (CLI)
+
+```bash
+aws dynamodb create-table \
+  --table-name customer_profile_nosql \
+  --attribute-definitions AttributeName=customer_id,AttributeType=S \
+  --key-schema AttributeName=customer_id,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region eu-central-1 \
+  --profile students-role
+```
+
+### Why `customer_id` as partition key
+- high cardinality (good partition distribution),
+- direct item lookup pattern (`GetItem/Query`) is frequent,
+- avoids hot partitions better than low-cardinality keys like city.
+
+## 5.2 Insert 20+ rows (batch)
 
 ```bash
 aws dynamodb batch-write-item \
@@ -108,16 +195,7 @@ aws dynamodb batch-write-item \
   --profile students-role
 ```
 
-## 4. DynamoDB scan
-
-```bash
-aws dynamodb scan \
-  --table-name dim_customers_sumi \
-  --region eu-central-1 \
-  --profile students-role
-```
-
-## 5. DynamoDB batch get
+## 5.3 Retrieve 5+ rows by keys
 
 ```bash
 aws dynamodb batch-get-item \
@@ -126,20 +204,93 @@ aws dynamodb batch-get-item \
   --profile students-role
 ```
 
-## 6. Sample request-body pattern for `get_items_sumi.json`
+## 5.4 “Select-like” reads (scan/query examples)
 
-```json
-{
-  "dim_customers_sumi": {
-    "Keys": [
-      { "customer_surr_id": { "S": "1" } },
-      { "customer_surr_id": { "S": "2" } },
-      { "customer_surr_id": { "S": "3" } },
-      { "customer_surr_id": { "S": "4" } },
-      { "customer_surr_id": { "S": "5" } }
-    ]
-  }
-}
+```bash
+# full scan (lab/demo only)
+aws dynamodb scan \
+  --table-name customer_profile_nosql \
+  --region eu-central-1 \
+  --profile students-role
+
+# filter: city = Istanbul
+aws dynamodb scan \
+  --table-name customer_profile_nosql \
+  --filter-expression "city = :c" \
+  --expression-attribute-values '{":c":{"S":"Istanbul"}}' \
+  --region eu-central-1 \
+  --profile students-role
+
+# filter: age >= 25
+aws dynamodb scan \
+  --table-name customer_profile_nosql \
+  --filter-expression "age >= :a" \
+  --expression-attribute-values '{":a":{"N":"25"}}' \
+  --region eu-central-1 \
+  --profile students-role
+
+# key-based query (preferred when key is known)
+aws dynamodb query \
+  --table-name customer_profile_nosql \
+  --key-condition-expression "customer_id = :cid" \
+  --expression-attribute-values '{":cid":{"S":"1"}}' \
+  --region eu-central-1 \
+  --profile students-role
 ```
 
+## 5.5 Delete 2 items
 
+```bash
+aws dynamodb delete-item \
+  --table-name customer_profile_nosql \
+  --key '{"customer_id":{"S":"19"}}' \
+  --region eu-central-1 \
+  --profile students-role
+
+aws dynamodb delete-item \
+  --table-name customer_profile_nosql \
+  --key '{"customer_id":{"S":"20"}}' \
+  --region eu-central-1 \
+  --profile students-role
+```
+
+## 5.6 Verify post-delete row count
+
+```bash
+aws dynamodb scan \
+  --table-name customer_profile_nosql \
+  --select "COUNT" \
+  --region eu-central-1 \
+  --profile students-role
+```
+
+Interpretation:
+- `Scan` is expensive at scale; use key-centric access patterns for performance.
+- Retry `UnprocessedItems` from batch operations with exponential backoff in production.
+
+---
+
+## 6) Curated “what was removed” from raw notes
+
+- Repeated task text blocks and duplicated SQL sections
+  - removed to prevent drift and confusion.
+- Real usernames, passwords, hostnames, key paths, and terminal fingerprints
+  - removed for security/privacy.
+- Non-portable procedure pattern (`CREATE PROCEDURE IF NOT EXISTS` for MySQL)
+  - replaced with portable `DROP ...; CREATE ...` pattern.
+- Mixed table names from old payload (`dim_customers_sumi` / `customer_surr_id`)
+  - normalized to `customer_profile_nosql` / `customer_id`.
+
+---
+
+## 7) Completion checklist for report evidence
+
+1. RDS script executed with personal user (not admin for normal DML).
+2. Table + view + procedure created and tested.
+3. Aurora query output captured (console and/or SQL client through tunnel).
+4. DynamoDB table created via CLI with justified partition key.
+5. 20+ rows inserted, 5+ rows fetched by keys.
+6. Filter scans demonstrated and interpreted.
+7. Two rows deleted and final count verified.
+
+This completes the end-to-end portfolio with managed SQL + managed NoSQL service practice.
