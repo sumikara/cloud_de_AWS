@@ -7,7 +7,12 @@ It follows this progression:
 
 Main region used in examples: `eu-central-1`.
 
----
+Core modules:
+1. IAM / SSO / S3 / Glue / Athena
+2. EC2 / PostgreSQL / Apache / CloudWatch / CloudFormation
+3. Redshift analytics + optimization + Spectrum
+4. RDS MySQL / Aurora / DynamoDB
+5. Lambda + Step Functions data quality orchestration
 
 ## 1) Project Overview
 
@@ -123,9 +128,3 @@ Use placeholders:
 
 ---
 
-## 7) Next Improvements
-
-- Add IaC for Lambda + Step Functions deployment.
-- Add real CloudWatch metrics/alarms mapping per state.
-- Add failure simulation test events for Step Functions Choice branches.
-- Add CI lint for markdown/json/python/sql.

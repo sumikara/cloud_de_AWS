@@ -116,6 +116,10 @@ SELECT * FROM app_relational.people ORDER BY person_id;
 SELECT * FROM app_relational.v_adults ORDER BY person_id;
 ```
 
+Interpretation:
+- View gives reusable semantic filtering.
+- Procedure centralizes write logic and keeps app-side SQL cleaner.
+
 ---
 
 ## 4) TASK 2 — Aurora access and meaningful querying
