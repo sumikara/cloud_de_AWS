@@ -3,7 +3,7 @@
 This repository is a portfolio-style, end-to-end AWS data engineering practice project.
 It walks through a realistic learning sequence:
 
-**Access → Storage → Catalog → Query → Compute → Warehouse → Managed DBs → NoSQL**.
+**Access → Storage → Catalog → Query → Compute → Warehouse → Managed DBs → NoSQL → Orchestration**.
 
 Main region used in examples: `eu-central-1`.
 
@@ -11,14 +11,15 @@ Main region used in examples: `eu-central-1`.
 
 ## 1) Project Overview
 
-The project is organized as four hands-on modules:
+The project is organized as core modules plus one optional orchestration extension:
 
 1. **IAM / SSO / S3 / Glue / Athena**
 2. **EC2 / PostgreSQL / Apache / CloudWatch / CloudFormation**
 3. **Redshift analytics + optimization + Spectrum concepts**
 4. **RDS MySQL / Aurora / DynamoDB**
+5. **(Optional) Lambda + Step Functions orchestration**
 
-The goal is to practice both SQL and NoSQL patterns with secure connectivity, reproducible scripts, and public-safe documentation.
+The goal is to practice SQL + NoSQL patterns, secure connectivity, and workflow-oriented data platform design with public-safe documentation.
 
 ---
 
@@ -31,7 +32,8 @@ cloud_de_AWS/
 │   ├── 01-parts-overview.md
 │   ├── 02-services-summary.md
 │   ├── 03-ss-guide.md
-│   └── 04-pipeline-review.md
+│   ├── 04-pipeline-review.md
+│   └── 05-orchestration-lambda-stepfunctions.md
 ├── codes/
 │   ├── 01-IAM-S3-Glue-Athena.md
 │   ├── 02-EC2-PostgreSQL-CloudFormation.md
@@ -51,55 +53,39 @@ cloud_de_AWS/
 ## 3) How to Navigate the Learning Path
 
 ### Step 1 — Access and Data Lake Basics
-Start with:
 - `codes/01-IAM-S3-Glue-Athena.md`
 
-You will practice:
-- AWS CLI SSO profiles
-- S3 bucket layout
-- Glue crawler + Data Catalog
-- Athena validation queries
-
 ### Step 2 — Compute and Self-managed Database on EC2
-Continue with:
 - `codes/02-EC2-PostgreSQL-CloudFormation.md`
 
-You will practice:
-- EC2 provisioning with IMDSv2
-- PostgreSQL installation and SQL objects
-- SSH-based access
-- EBS snapshot + AMI flow
-- CloudWatch/SNS + CloudFormation fundamentals
-
 ### Step 3 — Warehouse Layer
-Continue with:
 - `codes/03-Redshift.md`
 - `sql/redshift/03_report_pipeline.sql`
 
-You will practice:
-- Secure Redshift access via jump host
-- S3-to-Redshift COPY ingestion
-- Encoding / DISTKEY / SORTKEY reasoning
-- Stored procedure report loading
-- Spectrum external schema concepts
-
 ### Step 4 — Managed SQL + NoSQL
-Finish with:
 - `codes/04-RDS-Aurora-DynamoDB.md`
 - `customers_batch_sumi.json`
 - `get_items_sumi.json`
 
-You will practice:
-- Restartable RDS MySQL init script
-- Aurora private connectivity via SSH tunnel
-- DynamoDB CLI-driven create/write/read/delete operations
+### Step 5 — Optional Orchestration Layer
+- `docs/05-orchestration-lambda-stepfunctions.md`
+
+Use this step if your implementation includes Lambda-based quality checks and Step Functions workflow orchestration.
 
 ---
 
 ## 4) Architecture Snapshot
 
+Core path:
+
 ```text
 Local PC → SSO/CLI → S3 / EC2 / Glue / Athena / Redshift / RDS / DynamoDB
+```
+
+Extended path (if Lambda + Step Functions are included):
+
+```text
+Local PC → SSO/CLI → S3 (Bronze/Silver/Gold) → Lambda → Step Functions → Glue → Redshift → BI
 ```
 
 ---
@@ -122,18 +108,18 @@ Use placeholders instead:
 
 ## 6) What Was Improved in This Revision
 
-- Added `docs/04-pipeline-review.md` with a full repository audit against a typical data engineering pipeline.
-- Cleaned README structure to reflect **actual repository paths**.
-- Removed outdated references and made the overview consistent with current files.
-- Made onboarding clearer with a strict “what to run first” sequence.
+- Added a full repository pipeline audit at `docs/04-pipeline-review.md`.
+- Added orchestration extension documentation at `docs/05-orchestration-lambda-stepfunctions.md`.
+- Updated README to explicitly include optional Lambda + Step Functions + diagram path.
+- Kept all examples public-safe and parameterized.
 
 ---
 
 ## 7) Next Recommended Improvements
 
-- Add data-quality test SQL templates (null checks, duplicate-key checks, row-count reconciliation).
-- Add Redshift troubleshooting snippets (`stl_load_errors`, query diagnostics).
-- Add DynamoDB retry/backoff example for `UnprocessedItems`.
-- Add lightweight CI checks for markdown/json/sql formatting.
+- Add real IaC artifacts for Lambda and Step Functions (`templates/stepfunctions-pipeline.yaml`).
+- Add sample Lambda handlers under `lambda/` and execution examples.
+- Add architecture image asset referenced from README.
+- Add CI checks for markdown/json/sql linting.
 
-These will improve operational maturity and make the portfolio even stronger.
+These steps will make the orchestration layer verifiable as code, not only as documentation.
