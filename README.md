@@ -78,12 +78,6 @@ aws-practice-repo/
 ├── templates/
 │   └── ec2-sumeyye-stack.yaml
 │
-├── assets/
-│   ├── Part 1/
-│   ├── Part 2/
-│   ├── Part 3/
-│   └── Part 4/
-│
 └── samples/
     ├── customers_batch_sumi.json
     └── get_items_sumi.json
