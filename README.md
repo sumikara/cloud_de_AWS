@@ -7,13 +7,13 @@ A compact but end-to-end AWS practice repository built from four training tasks 
 > This repository consolidates earlier hands-on AWS learning materials into one clean portfolio-ready structure.  
 > Main region used across the tasks: **eu-central-1 (Frankfurt)**.  
 > EPAM VPN was required for restricted resources in several steps.  
-> Mandatory resource tag used throughout the tasks: **`owner=student`**. fileciteturn2file0L1-L18
+> Mandatory resource tag used throughout the tasks: **`owner=student`**.
 
 ---
 
 ## 1. Repository Purpose
 
-This repo demonstrates a practical AWS learning path that starts with secure account access and S3 usage, continues with EC2-based infrastructure and self-managed PostgreSQL, moves into Redshift-oriented analytical design, and finishes with managed database services such as RDS MySQL, Aurora, and DynamoDB. The source materials show both actual hands-on execution and, for some Redshift parts, theory-based completion when service access was unavailable. fileciteturn2file0L19-L37 fileciteturn2file2L1-L20
+This repo demonstrates a practical AWS learning path that starts with secure account access and S3 usage, continues with EC2-based infrastructure and self-managed PostgreSQL, moves into Redshift-oriented analytical design, and finishes with managed database services such as RDS MySQL, Aurora, and DynamoDB. The source materials show both actual hands-on execution and, for some Redshift parts, theory-based completion when service access was unavailable. 
 
 ---
 
@@ -53,7 +53,7 @@ This repo demonstrates a practical AWS learning path that starts with secure acc
 ### 4 — Managed DB Services
 - **RDS MySQL**: restartable schema/table/view/procedure script
 - **Aurora**: secure connectivity through EC2 bastion + SSH tunnel
-- **DynamoDB**: table creation, batch write, batch get, scan, and deletion workflow fileciteturn2file3L1-L81 fileciteturn1file4L1-L55
+- **DynamoDB**: table creation, batch write, batch get, scan, and deletion workflow 
 
 ---
 
@@ -98,26 +98,26 @@ The materials reflect a natural cloud learning progression:
 7. **Analyze warehouse design choices** in Redshift, including `COPY`, compression, distribution, and sort strategy.
 8. **Work with managed databases** through RDS MySQL and Aurora.
 9. **Use NoSQL patterns** through DynamoDB.
-10. **Automate infrastructure** with CloudFormation and monitor it with CloudWatch + SNS. fileciteturn2file1L1-L18 fileciteturn2file2L21-L53 fileciteturn2file3L1-L81
+10. **Automate infrastructure** with CloudFormation and monitor it with CloudWatch + SNS. 
 
 ---
 
 ## 5. Highlights by Parts
 
 ### Part 1 Highlights
-The IAM/S3 task established the foundation for later tasks: SSO setup, CLI profile configuration, and role-based access. It then moved into practical S3 usage and data lake-style organization, followed by Glue crawler/Data Catalog registration and Athena querying. fileciteturn2file0L19-L53
+The IAM/S3 task established the foundation for later tasks: SSO setup, CLI profile configuration, and role-based access. It then moved into practical S3 usage and data lake-style organization, followed by Glue crawler/Data Catalog registration and Athena querying. 
 
 ### Part  2 Highlights
-The EC2 task focused on the lowest-cost database hosting approach: launching a small Linux server and installing PostgreSQL manually. It also expanded into supporting services such as EBS, Apache, snapshots/AMI logic, monitoring, and infrastructure-as-code with CloudFormation. fileciteturn2file1L1-L18
+The EC2 task focused on the lowest-cost database hosting approach: launching a small Linux server and installing PostgreSQL manually. It also expanded into supporting services such as EBS, Apache, snapshots/AMI logic, monitoring, and infrastructure-as-code with CloudFormation.
 
 ### Part  3 Highlights
-The Redshift task connected the earlier S3 and EC2 work into an analytics workflow. The materials describe S3 as data lake storage, Glue Spark for transformation, Athena for profiling, Redshift `COPY` for loading, and SQL/reporting logic for KPI-oriented analysis. The report procedure used a fact table joined with customer and product dimensions to compute sales by category, city, and month. fileciteturn1file0L1-L22 fileciteturn2file2L21-L58
+The Redshift task connected the earlier S3 and EC2 work into an analytics workflow. The materials describe S3 as data lake storage, Glue Spark for transformation, Athena for profiling, Redshift `COPY` for loading, and SQL/reporting logic for KPI-oriented analysis. The report procedure used a fact table joined with customer and product dimensions to compute sales by category, city, and month. 
 
 ### Part  4 Highlights
 The managed DB task compared different database access patterns:
 - **RDS MySQL** allowed direct SQL environment setup.
 - **Aurora** required a private-network approach through EC2 SSH tunneling.
-- **DynamoDB** introduced JSON request bodies for batch operations and key-based retrieval. fileciteturn2file3L1-L81 fileciteturn1file4L1-L55
+- **DynamoDB** introduced JSON request bodies for batch operations and key-based retrieval. 
 
 ---
 
@@ -130,7 +130,7 @@ The managed DB task compared different database access patterns:
 - access tokens, passwords, session tokens, or copied console secrets
 - screenshots that expose secrets or live credentials
 
-The original training instructions explicitly say **do not commit or share credentials**. fileciteturn2file0L1-L18
+The original training instructions explicitly say **do not commit or share credentials**. 
 
 ### What should be sanitized before publishing
 Even if something was acceptable in a classroom environment, public GitHub content should not expose:
@@ -177,7 +177,7 @@ every screenshot prove one meaningful milestone such as successful SSO auth, buc
 | 15 | Aurora | Private managed DB access through bastion/SSH tunneling |
 | 16 | DynamoDB | NoSQL table operations with batch JSON requests |
 
-This sequence is reconstructed from the uploaded task materials and your completion notes. fileciteturn2file0L19-L53 fileciteturn2file1L1-L18 fileciteturn2file2L21-L58 fileciteturn2file3L1-L81
+This sequence is reconstructed from the uploaded task materials and your completion notes.
 
 ---
 
