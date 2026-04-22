@@ -64,16 +64,16 @@ aws-practice-repo/
 │
 ├── README.md
 ├── docs/
-│   ├── 01_task_overview.md
+│   ├── 01_overview.md
 │   ├── 02_services_summary.md
 │   ├── 03_evidence_guide.md
 │   └── 04_security_and_commit_rules.md
 │
 ├── code/
-│   ├── task1_iam_s3_glue_athena.md
-│   ├── task2_ec2_postgresql_cloudformation.md
-│   ├── task3_redshift.md
-│   └── task4_rds_aurora_dynamodb.md
+│   ├── 01_iam_s3_glue_athena.md
+│   ├── 02_ec2_postgresql_cloudformation.md
+│   ├── 03_redshift.md
+│   └── 04_rds_aurora_dynamodb.md
 │
 ├── templates/
 │   └── ec2-sumeyye-stack.yaml
