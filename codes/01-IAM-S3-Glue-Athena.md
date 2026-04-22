@@ -1,6 +1,6 @@
 # Part 1 — AWS Access, S3 Data Lake Ingestion, Glue Catalog, Athena Query
 
-## 0) Quick intent summary (what this section aims to build)
+## summary this section aims to build;
 This first section establishes a **minimum but production-minded cloud data foundation**: you authenticate to AWS with SSO, switch into a task role with the correct permissions, create and validate an S3 bucket, upload local DWH-style source files into a clean folder hierarchy, register metadata with Glue (Crawler + Data Catalog), and run analytical SQL in Athena on top of those files. In short: **secure access + governed storage + queryable metadata + serverless SQL**.
 
 At the end of this section you should have a working local-to-cloud ingestion path and an analytics-ready lake layout.
@@ -181,27 +181,9 @@ GROUP BY country
 ORDER BY customer_count DESC
 LIMIT 50;
 ```
-
 ---
 
-## 6) Noise removed from raw notes (and why)
-
-The following items were intentionally excluded from executable guidance:
-
-- **Repeated command blocks** (`aws configure sso`, `aws sts get-caller-identity`, upload examples repeated):
-  - **Reason:** duplicates create confusion and version drift.
-- **Personal identifiers (name/email/account-linked ARN fragments):**
-  - **Reason:** privacy and security hygiene for portfolio publication.
-- **Region-mismatched console link (`eu-north-1`) while runtime region is `eu-central-1`:**
-  - **Reason:** can lead to “resource not found” misunderstandings.
-- **Typo in profile (`students-rol`):**
-  - **Reason:** command fails; standardized to `students-role`.
-- **Long raw authorization URLs and full terminal transcripts:**
-  - **Reason:** too verbose, sensitive, and not reusable as a runbook.
-
----
-
-## 7) Practical best practices (simple, not overengineered)
+## 6) Practical best practices (simple, not overengineered)
 
 - Keep one **active region per learning module** (here: `eu-central-1`).
 - Use deterministic S3 layout: `s3://<bucket>/<domain_db>/<schema>/<table>/...`
