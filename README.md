@@ -84,6 +84,16 @@ Local PC → SSO/CLI → S3 / EC2 / Glue / Athena / Redshift / RDS / DynamoDB
                                      └→ Lambda + Step Functions (data quality orchestration)
 ```
 
+### Workflow diagram generation (local)
+
+The repository includes `scripts/generate_workflow_diagram.py` to generate a workflow PNG under `evidence/`.
+
+```bash
+python scripts/generate_workflow_diagram.py
+```
+
+If your Git platform blocks newly added binary files, keep the generated PNG local and avoid committing it.
+
 ---
 ## 4. Key Learning Flow
 
@@ -135,7 +145,6 @@ I used placeholders for:
 | 16 | DynamoDB | NoSQL table operations with batch JSON requests |
 
 ---
-
 
 
 
