@@ -1,0 +1,51 @@
+{
+  "Comment": "Redshift Data Quality Check Orchestration",
+  "StartAt": "InitialSelect",
+  "States": {
+    "InitialSelect": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "<lambda_initial_select>",
+        "Payload.$": "$"
+      },
+      "ResultPath": "$.first",
+      "Next": "UpdateRow"
+    },
+    "UpdateRow": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "<lambda_update_row>",
+        "Payload.$": "$"
+      },
+      "ResultPath": "$.update",
+      "Next": "FinalSelect"
+    },
+    "FinalSelect": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "<lambda_final_select>",
+        "Payload.$": "$"
+      },
+      "ResultPath": "$.final",
+      "Next": "CheckResults"
+    },
+    "CheckResults": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {"Variable": "$.first.Payload.status", "StringEquals": "OK"},
+            {"Variable": "$.final.Payload.status", "StringEquals": "SUCCESS"}
+          ],
+          "Next": "Success"
+        }
+      ],
+      "Default": "Fail"
+    },
+    "Success": {"Type": "Succeed"},
+    "Fail": {"Type": "Fail", "Cause": "Data quality checks failed"}
+  }
+}

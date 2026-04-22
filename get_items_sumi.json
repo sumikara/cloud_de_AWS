@@ -1,11 +1,31 @@
 {
-  "dim_customers_sumi": {
+  "customer_profile_nosql": {
     "Keys": [
-      {"customer_surr_id": {"S": "1"}},
-      {"customer_surr_id": {"S": "2"}},
-      {"customer_surr_id": {"S": "3"}},
-      {"customer_surr_id": {"S": "4"}},
-      {"customer_surr_id": {"S": "5"}}
+      {
+        "customer_id": {
+          "S": "1"
+        }
+      },
+      {
+        "customer_id": {
+          "S": "2"
+        }
+      },
+      {
+        "customer_id": {
+          "S": "3"
+        }
+      },
+      {
+        "customer_id": {
+          "S": "4"
+        }
+      },
+      {
+        "customer_id": {
+          "S": "5"
+        }
+      }
     ]
   }
 }
