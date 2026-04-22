@@ -1,6 +1,4 @@
 # Evidence Guide
-
-## Best practice
 A dedicated `assets/` folder keeps screenshots that prove all my steps, like:
 - successful SSO / identity check
 - bucket creation
