@@ -1,1 +1,65 @@
 
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 t2.micro with IMDSv2, extra EBS, S3 access via instance profile, tags (owner=student)
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Existing EC2 KeyPair name (e.g., Ec2_PG_Server_Keys_sumi)
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet to launch the instance into
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Existing Security Group ID (e.g., xxlab-training SG)
+  InstanceProfileName:
+    Type: String
+    Description: Existing IAM Instance Profile name (e.g., AWS_EC2_full_access_S3)
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Description: Amazon Linux 2023 AMI from SSM Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref InstanceProfileName
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !Ref SubnetId
+          GroupSet: [ !Ref SecurityGroupId ]
+          AssociatePublicIpAddress: true
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+            VolumeType: gp3
+            DeleteOnTermination: true
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 10
+            VolumeType: gp3
+            DeleteOnTermination: true
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpTokens: required         # IMDSv2 zorunlu
+      Tags:
+        - Key: Name
+          Value: xx-ec2-from-cfn
+        - Key: owner
+          Value: student
+
+Outputs:
+  InstanceId:
+    Description: Launched EC2 instance ID
+    Value: !Ref EC2Instance
+  PublicIp:
+    Description: Public IPv4 of the instance
+    Value: !GetAtt EC2Instance.PublicIp
+  AvailabilityZone:
+    Description: Availability Zone
+    Value: !GetAtt EC2Instance.Placement.AvailabilityZone
