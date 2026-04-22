@@ -1,1 +1,204 @@
-
+{
+  "dim_customers_sumi": [
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "1"},
+          "customer_name": {"S": "Alice"},
+          "age": {"N": "21"},
+          "city": {"S": "Istanbul"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "2"},
+          "customer_name": {"S": "Bob"},
+          "age": {"N": "23"},
+          "city": {"S": "Ankara"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "3"},
+          "customer_name": {"S": "Carol"},
+          "age": {"N": "20"},
+          "city": {"S": "Izmir"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "4"},
+          "customer_name": {"S": "David"},
+          "age": {"N": "25"},
+          "city": {"S": "Bursa"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "5"},
+          "customer_name": {"S": "Ece"},
+          "age": {"N": "22"},
+          "city": {"S": "Antalya"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "6"},
+          "customer_name": {"S": "Frank"},
+          "age": {"N": "24"},
+          "city": {"S": "Adana"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "7"},
+          "customer_name": {"S": "Gizem"},
+          "age": {"N": "21"},
+          "city": {"S": "Gaziantep"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "8"},
+          "customer_name": {"S": "Hasan"},
+          "age": {"N": "26"},
+          "city": {"S": "Konya"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "9"},
+          "customer_name": {"S": "Irem"},
+          "age": {"N": "20"},
+          "city": {"S": "Kayseri"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "10"},
+          "customer_name": {"S": "Jack"},
+          "age": {"N": "23"},
+          "city": {"S": "Eskisehir"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "11"},
+          "customer_name": {"S": "Kubra"},
+          "age": {"N": "22"},
+          "city": {"S": "Samsun"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "12"},
+          "customer_name": {"S": "Levent"},
+          "age": {"N": "24"},
+          "city": {"S": "Trabzon"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "13"},
+          "customer_name": {"S": "Merve"},
+          "age": {"N": "25"},
+          "city": {"S": "Denizli"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "14"},
+          "customer_name": {"S": "Nihat"},
+          "age": {"N": "23"},
+          "city": {"S": "Mardin"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "15"},
+          "customer_name": {"S": "Oya"},
+          "age": {"N": "21"},
+          "city": {"S": "Edirne"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "16"},
+          "customer_name": {"S": "Pelin"},
+          "age": {"N": "22"},
+          "city": {"S": "Balikesir"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "17"},
+          "customer_name": {"S": "Quentin"},
+          "age": {"N": "26"},
+          "city": {"S": "London"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "18"},
+          "customer_name": {"S": "Rana"},
+          "age": {"N": "20"},
+          "city": {"S": "Paris"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "19"},
+          "customer_name": {"S": "Selim"},
+          "age": {"N": "25"},
+          "city": {"S": "Berlin"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "customer_surr_id": {"S": "20"},
+          "customer_name": {"S": "Tuba"},
+          "age": {"N": "22"},
+          "city": {"S": "Amsterdam"}
+        }
+      }
+    }
+  ]
+}
