@@ -78,3 +78,12 @@ This makes report assembly and cross-referencing easier.
 ## 6) Conclusion
 
 Use your own screenshots as primary evidence. External architecture images can support explanation, but should never replace implementation proof.
+
+
+## 7) Upload retry checklist (if images fail to upload)
+
+If an image upload fails, place screenshots into `evidence/` and reuse deterministic names.
+A ready-to-use retry list is provided in:
+- `evidence/README.md`
+
+This avoids broken links and keeps report references stable.

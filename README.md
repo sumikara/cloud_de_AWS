@@ -25,7 +25,7 @@ Core modules:
 
 Goal: demonstrate practical SQL + NoSQL + orchestration patterns with public-safe artifacts.
 
----
+If you use a workflow image in the project overview, make sure it matches the services actually implemented in this repository.
 
 
 ## 1.1 Workflow image fit check (important)
@@ -128,3 +128,9 @@ Use placeholders:
 
 ---
 
+## 7) Next Improvements
+
+- Add IaC for Lambda + Step Functions deployment.
+- Add real CloudWatch metrics/alarms mapping per state.
+- Add failure simulation test events for Step Functions Choice branches.
+- Add CI lint for markdown/json/python/sql.
