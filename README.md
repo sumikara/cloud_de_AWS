@@ -70,6 +70,8 @@ Local PC → SSO/CLI → S3 / EC2 / Glue / Athena / Redshift / RDS / DynamoDB
                                      └→ Lambda + Step Functions (data quality orchestration)
 ```
 
+<img width="1135" height="403" alt="Architecture of the work" src="https://github.com/user-attachments/assets/1baf4605-9216-481a-8273-a8ff59893622" />
+
 ---
 
 ## 5) Security and Publishing Rules
