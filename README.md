@@ -7,7 +7,12 @@ It follows this progression:
 
 Main region used in examples: `eu-central-1`.
 
----
+Core modules:
+1. IAM / SSO / S3 / Glue / Athena
+2. EC2 / PostgreSQL / Apache / CloudWatch / CloudFormation
+3. Redshift analytics + optimization + Spectrum
+4. RDS MySQL / Aurora / DynamoDB
+5. Lambda + Step Functions data quality orchestration
 
 ## 1) Project Overview
 
@@ -20,7 +25,7 @@ Core modules:
 
 Goal: demonstrate practical SQL + NoSQL + orchestration patterns with public-safe artifacts.
 
----
+If you use a workflow image in the project overview, make sure it matches the services actually implemented in this repository.
 
 
 ## 1.1 Workflow image fit check (important)
