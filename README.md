@@ -79,10 +79,10 @@ aws-practice-repo/
 │   └── ec2-sumeyye-stack.yaml
 │
 ├── assets/
-│   ├── task1/
-│   ├── task2/
-│   ├── task3/
-│   └── task4/
+│   ├── Part 1/
+│   ├── Part 2/
+│   ├── Part 3/
+│   └── Part 4/
 │
 └── samples/
     ├── customers_batch_sumi.json
