@@ -1,7 +1,7 @@
 # AWS Data Engineering Practice Repository
 
 This repository is a portfolio-style, end-to-end AWS data engineering practice project.
-It walks through a realistic learning sequence:
+It follows this progression:
 
 **Access → Storage → Catalog → Query → Compute → Warehouse → Managed DBs → NoSQL → Orchestration**.
 
@@ -11,15 +11,14 @@ Main region used in examples: `eu-central-1`.
 
 ## 1) Project Overview
 
-The project is organized as core modules plus one optional orchestration extension:
+Core modules:
+1. IAM / SSO / S3 / Glue / Athena
+2. EC2 / PostgreSQL / Apache / CloudWatch / CloudFormation
+3. Redshift analytics + optimization + Spectrum
+4. RDS MySQL / Aurora / DynamoDB
+5. Lambda + Step Functions data quality orchestration
 
-1. **IAM / SSO / S3 / Glue / Athena**
-2. **EC2 / PostgreSQL / Apache / CloudWatch / CloudFormation**
-3. **Redshift analytics + optimization + Spectrum concepts**
-4. **RDS MySQL / Aurora / DynamoDB**
-5. **(Optional) Lambda + Step Functions orchestration**
-
-The goal is to practice SQL + NoSQL patterns, secure connectivity, and workflow-oriented data platform design with public-safe documentation.
+Goal: demonstrate practical SQL + NoSQL + orchestration patterns with public-safe artifacts.
 
 ---
 
@@ -38,54 +37,37 @@ cloud_de_AWS/
 │   ├── 01-IAM-S3-Glue-Athena.md
 │   ├── 02-EC2-PostgreSQL-CloudFormation.md
 │   ├── 03-Redshift.md
-│   └── 04-RDS-Aurora-DynamoDB.md
+│   ├── 04-RDS-Aurora-DynamoDB.md
+│   └── 05-Lambda-StepFunctions-DataQuality.md
 ├── sql/
 │   └── redshift/
 │       └── 03_report_pipeline.sql
+├── lambda/
+│   └── athena_iceberg_quality.py
 ├── templates/
-│   └── ec2-sumi-stack.yaml
+│   ├── ec2-sumi-stack.yaml
+│   └── stepfunctions-redshift-dq.asl.json
 ├── customers_batch_sumi.json
 └── get_items_sumi.json
 ```
 
 ---
 
-## 3) How to Navigate the Learning Path
+## 3) Run Order
 
-### Step 1 — Access and Data Lake Basics
-- `codes/01-IAM-S3-Glue-Athena.md`
-
-### Step 2 — Compute and Self-managed Database on EC2
-- `codes/02-EC2-PostgreSQL-CloudFormation.md`
-
-### Step 3 — Warehouse Layer
-- `codes/03-Redshift.md`
-- `sql/redshift/03_report_pipeline.sql`
-
-### Step 4 — Managed SQL + NoSQL
-- `codes/04-RDS-Aurora-DynamoDB.md`
-- `customers_batch_sumi.json`
-- `get_items_sumi.json`
-
-### Step 5 — Optional Orchestration Layer
-- `docs/05-orchestration-lambda-stepfunctions.md`
-
-Use this step if your implementation includes Lambda-based quality checks and Step Functions workflow orchestration.
+1. `codes/01-IAM-S3-Glue-Athena.md`
+2. `codes/02-EC2-PostgreSQL-CloudFormation.md`
+3. `codes/03-Redshift.md` + `sql/redshift/03_report_pipeline.sql`
+4. `codes/04-RDS-Aurora-DynamoDB.md`
+5. `codes/05-Lambda-StepFunctions-DataQuality.md`
 
 ---
 
 ## 4) Architecture Snapshot
 
-Core path:
-
 ```text
 Local PC → SSO/CLI → S3 / EC2 / Glue / Athena / Redshift / RDS / DynamoDB
-```
-
-Extended path (if Lambda + Step Functions are included):
-
-```text
-Local PC → SSO/CLI → S3 (Bronze/Silver/Gold) → Lambda → Step Functions → Glue → Redshift → BI
+                                     └→ Lambda + Step Functions (data quality orchestration)
 ```
 
 ---
@@ -94,32 +76,29 @@ Local PC → SSO/CLI → S3 (Bronze/Silver/Gold) → Lambda → Step Functions �
 
 Never commit:
 - private keys (`.pem`, `.ppk`, `.ssh/*`)
-- AWS credential files
-- real passwords, tokens, session secrets
-- full private endpoints tied to live environments
+- real credentials and tokens
+- account-specific private endpoints
+- hardcoded ARNs/usernames/passwords
 
-Use placeholders instead:
+Use placeholders:
 - `<account-id>`
+- `<cluster-endpoint>`
 - `<db-user>`
 - `<strong-password-xx>`
-- `<cluster-endpoint>`
 
 ---
 
-## 6) What Was Improved in This Revision
+## 6) Latest Additions
 
-- Added a full repository pipeline audit at `docs/04-pipeline-review.md`.
-- Added orchestration extension documentation at `docs/05-orchestration-lambda-stepfunctions.md`.
-- Updated README to explicitly include optional Lambda + Step Functions + diagram path.
-- Kept all examples public-safe and parameterized.
+- Data quality orchestration runbook: `codes/05-Lambda-StepFunctions-DataQuality.md`
+- Step Functions ASL template: `templates/stepfunctions-redshift-dq.asl.json`
+- Lambda sample for Athena Iceberg flow: `lambda/athena_iceberg_quality.py`
 
 ---
 
-## 7) Next Recommended Improvements
+## 7) Next Improvements
 
-- Add real IaC artifacts for Lambda and Step Functions (`templates/stepfunctions-pipeline.yaml`).
-- Add sample Lambda handlers under `lambda/` and execution examples.
-- Add architecture image asset referenced from README.
-- Add CI checks for markdown/json/sql linting.
-
-These steps will make the orchestration layer verifiable as code, not only as documentation.
+- Add IaC for Lambda + Step Functions deployment.
+- Add real CloudWatch metrics/alarms mapping per state.
+- Add failure simulation test events for Step Functions Choice branches.
+- Add CI lint for markdown/json/python/sql.
