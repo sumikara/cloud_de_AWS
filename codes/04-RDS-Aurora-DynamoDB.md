@@ -1,116 +1,119 @@
-# Part 4 — RDS + Aurora + DynamoDB (Technical Implementation and Interpretation)
+# Part 4 — DB Services (RDS MySQL, Aurora, DynamoDB)
 
 ## 0) One-paragraph objective summary
-This final section validates both relational and NoSQL managed database practice in AWS: create and test a MySQL workload on RDS, connect to private Aurora through an EC2 SSH tunnel, design and operate a DynamoDB table with batch write/read patterns, and interpret service-level tradeoffs (consistency, scaling, cost, and query patterns). The goal is to show practical cloud database engineering decisions, not only command execution.
+This final module demonstrates production-style managed database practice across SQL and NoSQL: build a restartable MySQL initialization script on RDS, run meaningful Aurora queries through secure private connectivity (console + SSH bastion), and execute DynamoDB lifecycle operations by CLI (create table, load 20+ rows, retrieve by key, filter/select patterns, and delete records). All sensitive values are replaced with placeholders so the guide is safe for public portfolio use.
 
 ---
 
-## 1) Bird’s-eye architecture and purpose
-
-- **RDS MySQL**: managed relational engine for transactional SQL patterns
-- **Aurora MySQL-compatible**: managed high-availability relational cluster pattern
-- **EC2 jump host**: secure access bridge to private database endpoints
-- **DynamoDB**: serverless key-value/NoSQL access for low-latency reads/writes
-- **S3 + Glue + Athena + Redshift (previous parts)**: analytical pipeline integration context
-
-Required full-chain view:
+## 1) Big-picture architecture
 
 ```text
 Local PC → SSO/CLI → S3 / EC2 / Glue / Athena / Redshift / RDS / DynamoDB
 ```
 
-Part 4 active path:
+Part 4 active flow:
 
 ```text
 Local PC
-  ├─ DBeaver / mysql client
-  │   └─ SSH tunnel via EC2
-  │       └─ Aurora (private)
-  ├─ Direct SQL client
-  │   └─ RDS MySQL endpoint
-  └─ AWS CLI
-      └─ DynamoDB table (batch write/get/scan/query)
+  ├─ SQL client → RDS MySQL (publicly reachable only if intentionally exposed)
+  ├─ SQL client → SSH tunnel via EC2 → Aurora (private endpoint)
+  └─ AWS CLI → DynamoDB API (create/write/read/delete)
 ```
 
 ---
 
-## 2) Artifact mapping by file type
+## 2) Artifact map by extension
 
-| Purpose | Suggested file | Extension |
+| Purpose | File | Type |
 |---|---|---|
-| Runbook and interpretation | `codes/04-RDS-Aurora-DynamoDB.md` | `.md` |
-| RDS/Aurora SQL setup scripts | `sql/mysql/04_relational_setup.sql` (optional) | `.sql` |
-| DynamoDB batch write payload | `customers_batch_sumi.json` | `.json` |
-| DynamoDB batch get payload | `get_items_sumi.json` | `.json` |
-| Optional CLI automation | `scripts/dynamo_seed.py` | `.py` |
+| Task runbook + interpretation | `codes/04-RDS-Aurora-DynamoDB.md` | `.md` |
+| DynamoDB batch write payload (20+ rows) | `customers_batch_sumi.json` | `.json` |
+| DynamoDB batch get payload (5+ keys) | `get_items_sumi.json` | `.json` |
+| Optional relational init script extraction | `sql/mysql/04_init.sql` | `.sql` |
+| Optional Dynamo automation wrapper | `scripts/dynamo_seed.py` | `.py` |
 | Optional infra templates | `templates/*.yaml` | `.yaml` |
-
-Combined purpose: demonstrate both SQL and NoSQL implementation with reusable, public-safe assets.
 
 ---
 
-## 3) RDS MySQL: practical SQL build (transactional baseline)
+## 3) TASK 1 — RDS MySQL (restartable initial script)
 
-> Use placeholders for all secrets. Do not commit real passwords.
+### 3.1 Why this script structure
+A restartable initialization script must be idempotent:
+- `CREATE ... IF NOT EXISTS`
+- `DROP ... IF EXISTS` before object recreation when needed
+- `INSERT ... ON DUPLICATE KEY UPDATE` for repeat-safe DML
+
+### 3.2 Admin bootstrap vs personal user
+- Admin credentials are used only once to create/grant a personal user.
+- All later operations should run with the personal user.
+- Never store real passwords in repository files.
+
+### 3.3 Practical SQL script (public-safe)
 
 ```sql
+-- 1) user + schema
 CREATE USER IF NOT EXISTS 'app_user'@'%' IDENTIFIED BY '<strong-password-xx>';
 CREATE SCHEMA IF NOT EXISTS app_relational;
+
+-- 2) privileges
 GRANT ALL PRIVILEGES ON app_relational.* TO 'app_user'@'%';
 GRANT CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, TRIGGER ON app_relational.* TO 'app_user'@'%';
 FLUSH PRIVILEGES;
 
-USE app_relational;
+-- 3) validation
+SELECT CURRENT_USER(), USER();
+SHOW GRANTS FOR CURRENT_USER;
 
-CREATE TABLE IF NOT EXISTS customer_profile (
-  customer_id INT PRIMARY KEY,
-  customer_name VARCHAR(100) NOT NULL,
+-- 4) table
+CREATE TABLE IF NOT EXISTS app_relational.people (
+  person_id INT PRIMARY KEY,
+  full_name VARCHAR(100) NOT NULL,
   age INT NOT NULL,
   city VARCHAR(100),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO customer_profile (customer_id, customer_name, age, city)
+-- 5) idempotent seed
+INSERT INTO app_relational.people (person_id, full_name, age, city)
 VALUES
   (1, 'Ada Lovelace', 36, 'London'),
   (2, 'Alan Turing', 41, 'Manchester'),
   (3, 'Grace Hopper', 85, 'New York')
 ON DUPLICATE KEY UPDATE
-  customer_name = VALUES(customer_name),
+  full_name = VALUES(full_name),
   age = VALUES(age),
   city = VALUES(city);
 
-DROP VIEW IF EXISTS v_customer_adults;
-CREATE SQL SECURITY INVOKER VIEW v_customer_adults AS
-SELECT customer_id, customer_name, age, city
-FROM customer_profile
+-- 6) view
+DROP VIEW IF EXISTS app_relational.v_adults;
+CREATE SQL SECURITY INVOKER VIEW app_relational.v_adults AS
+SELECT person_id, full_name, age, city
+FROM app_relational.people
 WHERE age >= 18;
-```
 
-Procedure pattern (portable):
-
-```sql
-DROP PROCEDURE IF EXISTS app_relational.upsert_customer;
+-- 7) procedure (portable pattern)
+DROP PROCEDURE IF EXISTS app_relational.add_or_update_person;
 DELIMITER $$
-CREATE PROCEDURE app_relational.upsert_customer(
-    IN p_customer_id INT,
-    IN p_customer_name VARCHAR(100),
+CREATE PROCEDURE app_relational.add_or_update_person(
+    IN p_person_id INT,
+    IN p_full_name VARCHAR(100),
     IN p_age INT,
     IN p_city VARCHAR(100)
 )
 BEGIN
-  INSERT INTO app_relational.customer_profile (customer_id, customer_name, age, city)
-  VALUES (p_customer_id, p_customer_name, p_age, p_city)
+  INSERT INTO app_relational.people (person_id, full_name, age, city)
+  VALUES (p_person_id, p_full_name, p_age, p_city)
   ON DUPLICATE KEY UPDATE
-    customer_name = VALUES(customer_name),
+    full_name = VALUES(full_name),
     age = VALUES(age),
     city = VALUES(city);
 END$$
 DELIMITER ;
 
-CALL app_relational.upsert_customer(4, 'Donald Knuth', 86, 'Stanford');
-SELECT * FROM app_relational.customer_profile ORDER BY customer_id;
-SELECT * FROM app_relational.v_customer_adults ORDER BY customer_id;
+-- 8) quick tests
+CALL app_relational.add_or_update_person(4, 'Donald Knuth', 86, 'Stanford');
+SELECT * FROM app_relational.people ORDER BY person_id;
+SELECT * FROM app_relational.v_adults ORDER BY person_id;
 ```
 
 Interpretation:
@@ -119,7 +122,12 @@ Interpretation:
 
 ---
 
-## 4) Aurora private access via EC2 SSH tunnel
+## 4) TASK 2 — Aurora access and meaningful querying
+
+### 4.1 Why Aurora from local PC usually needs bastion/SSH tunnel
+Unlike a publicly exposed RDS MySQL instance, Aurora is commonly deployed in private subnets without a public endpoint. That improves security, but local machines cannot connect directly. EC2 in the same VPC acts as a controlled bridge.
+
+### 4.2 SSH tunnel command (local → EC2 → Aurora)
 
 ```bash
 ssh -i "<jump-host-key>.pem" \
@@ -127,29 +135,62 @@ ssh -i "<jump-host-key>.pem" \
   ec2-user@<jump-host-public-dns>
 ```
 
-In SQL client (DBeaver/MySQL Workbench):
+Then connect in DBeaver/MySQL client to:
 - host: `127.0.0.1`
 - port: `3307`
-- database: `<db_name_xx>`
+- db: `<db_name_xx>`
 - user/password: `<xx>`
 
-Interpretation:
-- Aurora stays private inside VPC.
-- SSH tunnel provides controlled access without opening broad public DB access.
+### 4.3 Meaningful Aurora query examples (not trivial)
+
+```sql
+-- Top 10 cities by total customer payments
+SELECT c.city, SUM(p.amount) AS total_amount, COUNT(*) AS payment_count
+FROM sakila.payment p
+JOIN sakila.customer c ON p.customer_id = c.customer_id
+GROUP BY c.city
+ORDER BY total_amount DESC
+LIMIT 10;
+
+-- Monthly revenue trend
+SELECT DATE_FORMAT(payment_date, '%Y-%m') AS ym,
+       SUM(amount) AS revenue
+FROM sakila.payment
+GROUP BY DATE_FORMAT(payment_date, '%Y-%m')
+ORDER BY ym;
+
+-- Customers with high frequency rentals
+SELECT c.customer_id, CONCAT(c.first_name,' ',c.last_name) AS full_name,
+       COUNT(r.rental_id) AS rentals
+FROM sakila.customer c
+JOIN sakila.rental r ON c.customer_id = r.customer_id
+GROUP BY c.customer_id, full_name
+HAVING COUNT(r.rental_id) >= 20
+ORDER BY rentals DESC;
+```
 
 ---
 
-## 5) DynamoDB NoSQL: technical coding + interpretation
+## 5) TASK 3 — DynamoDB (API-first operations)
 
-### 5.1 Table modeling recommendation
+## 5.1 Create table (CLI)
 
-Table name: `customer_profile_nosql`
+```bash
+aws dynamodb create-table \
+  --table-name customer_profile_nosql \
+  --attribute-definitions AttributeName=customer_id,AttributeType=S \
+  --key-schema AttributeName=customer_id,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region eu-central-1 \
+  --profile students-role
+```
 
-- Partition key: `customer_id` (String)
-- Optional attributes: `customer_name`, `age`, `city`, `segment`, `last_update_ts`
-- Recommended billing for labs: **On-Demand** (simpler cost behavior)
+### Why `customer_id` as partition key
+- high cardinality (good partition distribution),
+- direct item lookup pattern (`GetItem/Query`) is frequent,
+- avoids hot partitions better than low-cardinality keys like city.
 
-### 5.2 Batch write from JSON
+## 5.2 Insert 20+ rows (batch)
 
 ```bash
 aws dynamodb batch-write-item \
@@ -158,9 +199,7 @@ aws dynamodb batch-write-item \
   --profile students-role
 ```
 
-### 5.3 Read patterns
-
-Batch get:
+## 5.3 Retrieve 5+ rows by keys
 
 ```bash
 aws dynamodb batch-get-item \
@@ -169,18 +208,32 @@ aws dynamodb batch-get-item \
   --profile students-role
 ```
 
-Scan (for small lab datasets only):
+## 5.4 “Select-like” reads (scan/query examples)
 
 ```bash
+# full scan (lab/demo only)
 aws dynamodb scan \
   --table-name customer_profile_nosql \
   --region eu-central-1 \
   --profile students-role
-```
 
-Query example (preferred over scan when key known):
+# filter: city = Istanbul
+aws dynamodb scan \
+  --table-name customer_profile_nosql \
+  --filter-expression "city = :c" \
+  --expression-attribute-values '{":c":{"S":"Istanbul"}}' \
+  --region eu-central-1 \
+  --profile students-role
 
-```bash
+# filter: age >= 25
+aws dynamodb scan \
+  --table-name customer_profile_nosql \
+  --filter-expression "age >= :a" \
+  --expression-attribute-values '{":a":{"N":"25"}}' \
+  --region eu-central-1 \
+  --profile students-role
+
+# key-based query (preferred when key is known)
 aws dynamodb query \
   --table-name customer_profile_nosql \
   --key-condition-expression "customer_id = :cid" \
@@ -189,57 +242,59 @@ aws dynamodb query \
   --profile students-role
 ```
 
-### 5.4 Interpretation (important)
+## 5.5 Delete 2 items
 
-- `Scan` reads many items and is expensive at scale.
-- `Query` is key-based and much more efficient.
-- `BatchWriteItem` can return `UnprocessedItems`; production code must retry with backoff.
-- DynamoDB gives very low latency for key access, but joins are not native like SQL.
+```bash
+aws dynamodb delete-item \
+  --table-name customer_profile_nosql \
+  --key '{"customer_id":{"S":"19"}}' \
+  --region eu-central-1 \
+  --profile students-role
 
----
+aws dynamodb delete-item \
+  --table-name customer_profile_nosql \
+  --key '{"customer_id":{"S":"20"}}' \
+  --region eu-central-1 \
+  --profile students-role
+```
 
-## 6) Public-safe JSON payload patterns
+## 5.6 Verify post-delete row count
 
-`customers_batch_sumi.json` should contain:
-- table key: `customer_profile_nosql`
-- multiple `PutRequest` entries with typed DynamoDB attributes.
+```bash
+aws dynamodb scan \
+  --table-name customer_profile_nosql \
+  --select "COUNT" \
+  --region eu-central-1 \
+  --profile students-role
+```
 
-`get_items_sumi.json` should contain:
-- table key: `customer_profile_nosql`
-- list of key objects for `BatchGetItem`.
-
----
-
-## 7) Validation checklist (what to prove in report)
-
-1. RDS SQL objects exist: table + view + procedure.
-2. Procedure call updates/inserts as expected.
-3. Aurora reachable only through tunnel path.
-4. DynamoDB batch write succeeded with no remaining unprocessed items.
-5. Query returns expected item(s) by partition key.
-6. Explain why query pattern beats scan pattern.
-
----
-
-## 8) What was removed/refactored and why
-
-- Personal endpoints, keys, emails, and credentials
-  - removed for security and public publishing safety.
-- Repetitive terminal transcripts
-  - replaced with concise executable blocks.
-- weak/default password examples
-  - replaced with placeholder + security guidance.
-- student-specific naming that reduces reuse
-  - normalized to portfolio-safe generic names.
+Interpretation:
+- `Scan` is expensive at scale; use key-centric access patterns for performance.
+- Retry `UnprocessedItems` from batch operations with exponential backoff in production.
 
 ---
 
-## 9) Final technical takeaway
+## 6) Curated “what was removed” from raw notes
 
-By completing Part 4, you demonstrate:
-- relational modeling and routines on managed SQL,
-- secure private DB connectivity patterns (bastion/tunnel),
-- NoSQL access design and CLI operation patterns,
-- engineering-level interpretation of performance and cost behavior.
+- Repeated task text blocks and duplicated SQL sections
+  - removed to prevent drift and confusion.
+- Real usernames, passwords, hostnames, key paths, and terminal fingerprints
+  - removed for security/privacy.
+- Non-portable procedure pattern (`CREATE PROCEDURE IF NOT EXISTS` for MySQL)
+  - replaced with portable `DROP ...; CREATE ...` pattern.
+- Mixed table names from old payload (`dim_customers_sumi` / `customer_surr_id`)
+  - normalized to `customer_profile_nosql` / `customer_id`.
 
-This closes the portfolio with both OLTP-style SQL and key-value NoSQL practice on AWS.
+---
+
+## 7) Completion checklist for report evidence
+
+1. RDS script executed with personal user (not admin for normal DML).
+2. Table + view + procedure created and tested.
+3. Aurora query output captured (console and/or SQL client through tunnel).
+4. DynamoDB table created via CLI with justified partition key.
+5. 20+ rows inserted, 5+ rows fetched by keys.
+6. Filter scans demonstrated and interpreted.
+7. Two rows deleted and final count verified.
+
+This completes the end-to-end portfolio with managed SQL + managed NoSQL service practice.
