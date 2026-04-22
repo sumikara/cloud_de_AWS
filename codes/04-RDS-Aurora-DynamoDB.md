@@ -1,6 +1,6 @@
 # Part 4 — DB Services (RDS MySQL, Aurora, DynamoDB)
 
-## 0) One-paragraph objective summary
+## objective summary
 This final module demonstrates production-style managed database practice across SQL and NoSQL: build a restartable MySQL initialization script on RDS, run meaningful Aurora queries through secure private connectivity (console + SSH bastion), and execute DynamoDB lifecycle operations by CLI (create table, load 20+ rows, retrieve by key, filter/select patterns, and delete records). All sensitive values are replaced with placeholders so the guide is safe for public portfolio use.
 
 ---
@@ -26,7 +26,7 @@ Local PC
 
 | Purpose | File | Type |
 |---|---|---|
-| Task runbook + interpretation | `codes/04-RDS-Aurora-DynamoDB.md` | `.md` |
+| Step by step runbook + interpretation | `codes/04-RDS-Aurora-DynamoDB.md` | `.md` |
 | DynamoDB batch write payload (20+ rows) | `customers_batch_sumi.json` | `.json` |
 | DynamoDB batch get payload (5+ keys) | `get_items_sumi.json` | `.json` |
 | Optional relational init script extraction | `sql/mysql/04_init.sql` | `.sql` |
@@ -35,7 +35,7 @@ Local PC
 
 ---
 
-## 3) TASK 1 — RDS MySQL (restartable initial script)
+## 3) RDS MySQL (restartable initial script)
 
 ### 3.1 Why this script structure
 A restartable initialization script must be idempotent:
@@ -122,7 +122,7 @@ Interpretation:
 
 ---
 
-## 4) TASK 2 — Aurora access and meaningful querying
+## 4) Aurora access and meaningful querying
 
 ### 4.1 Why Aurora from local PC usually needs bastion/SSH tunnel
 Unlike a publicly exposed RDS MySQL instance, Aurora is commonly deployed in private subnets without a public endpoint. That improves security, but local machines cannot connect directly. EC2 in the same VPC acts as a controlled bridge.
@@ -171,7 +171,7 @@ ORDER BY rentals DESC;
 
 ---
 
-## 5) TASK 3 — DynamoDB (API-first operations)
+## 5) DynamoDB (API-first operations)
 
 ## 5.1 Create table (CLI)
 
@@ -272,29 +272,6 @@ Interpretation:
 - `Scan` is expensive at scale; use key-centric access patterns for performance.
 - Retry `UnprocessedItems` from batch operations with exponential backoff in production.
 
----
-
-## 6) Curated “what was removed” from raw notes
-
-- Repeated task text blocks and duplicated SQL sections
-  - removed to prevent drift and confusion.
-- Real usernames, passwords, hostnames, key paths, and terminal fingerprints
-  - removed for security/privacy.
-- Non-portable procedure pattern (`CREATE PROCEDURE IF NOT EXISTS` for MySQL)
-  - replaced with portable `DROP ...; CREATE ...` pattern.
-- Mixed table names from old payload (`dim_customers_sumi` / `customer_surr_id`)
-  - normalized to `customer_profile_nosql` / `customer_id`.
-
----
-
-## 7) Completion checklist for report evidence
-
-1. RDS script executed with personal user (not admin for normal DML).
-2. Table + view + procedure created and tested.
-3. Aurora query output captured (console and/or SQL client through tunnel).
-4. DynamoDB table created via CLI with justified partition key.
-5. 20+ rows inserted, 5+ rows fetched by keys.
-6. Filter scans demonstrated and interpreted.
-7. Two rows deleted and final count verified.
+--
 
 This completes the end-to-end portfolio with managed SQL + managed NoSQL service practice.
