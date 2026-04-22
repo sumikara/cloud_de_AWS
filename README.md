@@ -7,7 +7,12 @@ It follows this progression:
 
 Main region used in examples: `eu-central-1`.
 
----
+Core modules:
+1. IAM / SSO / S3 / Glue / Athena
+2. EC2 / PostgreSQL / Apache / CloudWatch / CloudFormation
+3. Redshift analytics + optimization + Spectrum
+4. RDS MySQL / Aurora / DynamoDB
+5. Lambda + Step Functions data quality orchestration
 
 ## 1) Project Overview
 
@@ -19,6 +24,33 @@ Core modules:
 5. Lambda + Step Functions data quality orchestration
 
 Goal: demonstrate practical SQL + NoSQL + orchestration patterns with public-safe artifacts.
+
+---
+
+
+## 1.1 Workflow image fit check (important)
+
+If you use a workflow image in the project overview, make sure it matches the services actually implemented in this repository.
+
+### Implemented in this repo
+- IAM/SSO, STS
+- S3
+- Glue + Data Catalog + Athena
+- EC2 + EBS + CloudWatch + SNS + CloudFormation
+- Redshift (plus Spectrum concepts)
+- RDS MySQL + Aurora
+- DynamoDB
+- Lambda + Step Functions
+
+### Not implemented as executable modules in this repo
+- AWS DMS
+- Amazon EventBridge
+- AWS Secrets Manager
+- Amazon QuickSight
+
+Recommendation:
+- If your workflow image includes non-implemented services, label it as **"Target/Reference Architecture"**.
+- For strict implementation proof, use a second image labeled **"Implemented Architecture"** with only the services above.
 
 ---
 
@@ -70,8 +102,6 @@ Local PC → SSO/CLI → S3 / EC2 / Glue / Athena / Redshift / RDS / DynamoDB
                                      └→ Lambda + Step Functions (data quality orchestration)
 ```
 
-<img width="1135" height="403" alt="Architecture of the work" src="https://github.com/user-attachments/assets/1baf4605-9216-481a-8273-a8ff59893622" />
-
 ---
 
 ## 5) Security and Publishing Rules
@@ -98,9 +128,3 @@ Use placeholders:
 
 ---
 
-## 7) Next Improvements
-
-- Add IaC for Lambda + Step Functions deployment.
-- Add real CloudWatch metrics/alarms mapping per state.
-- Add failure simulation test events for Step Functions Choice branches.
-- Add CI lint for markdown/json/python/sql.
